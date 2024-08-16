@@ -97,16 +97,16 @@ def main():
 
         # Use hands based on hand keypoint detections
         for vitposes in vitposes_out:
-            left_hand_keyp = vitposes['keypoints'][-42:-21]
+            # left_hand_keyp = vitposes['keypoints'][-42:-21]
             right_hand_keyp = vitposes['keypoints'][-21:]
 
             # Rejecting not confident detections
-            keyp = left_hand_keyp
-            valid = keyp[:,2] > 0.5
-            if sum(valid) > 3:
-                bbox = [keyp[valid,0].min(), keyp[valid,1].min(), keyp[valid,0].max(), keyp[valid,1].max()]
-                bboxes.append(bbox)
-                is_right.append(0)
+            # keyp = left_hand_keyp
+            # valid = keyp[:,2] > 0.5
+            # if sum(valid) > 3:
+            #     bbox = [keyp[valid,0].min(), keyp[valid,1].min(), keyp[valid,0].max(), keyp[valid,1].max()]
+            #     bboxes.append(bbox)
+            #     is_right.append(0)
             keyp = right_hand_keyp
             valid = keyp[:,2] > 0.5
             if sum(valid) > 3:
@@ -141,6 +141,7 @@ def main():
             img_size = batch["img_size"].float()
             multiplier = (2*batch['right']-1)
             scaled_focal_length = model_cfg.EXTRA.FOCAL_LENGTH / model_cfg.MODEL.IMAGE_SIZE * img_size.max()
+            scaled_focal_length = 606
             pred_cam_t_full = cam_crop_to_full(pred_cam, box_center, box_size, img_size, scaled_focal_length).detach().cpu().numpy()
 
             # Render the result
@@ -185,7 +186,12 @@ def main():
                 # Save all meshes to disk
                 if args.save_mesh:
                     camera_translation = cam_t.copy()
+                    print('pred_cam_t_full', pred_cam_t_full[n])
+                    print('pred_cam_t_out', out['pred_cam_t'][n])
+                    # print(camera_translation)
+                    breakpoint()
                     tmesh = renderer.vertices_to_trimesh(verts, camera_translation, LIGHT_BLUE, is_right=is_right)
+                    print(tmesh.centroid)
                     tmesh.export(os.path.join(args.out_folder, f'{img_fn}_{person_id}.obj'))
 
         # Render front view

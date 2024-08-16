@@ -11,7 +11,7 @@ from typing import List, Optional
 
 def cam_crop_to_full(cam_bbox, box_center, box_size, img_size, focal_length=5000.):
     # Convert cam_bbox to full image
-    img_w, img_h = img_size[:, 0], img_size[:, 1]
+    img_w, img_h = 620, 480 # img_size[:, 0], img_size[:, 1]
     cx, cy, b = box_center[:, 0], box_center[:, 1], box_size
     w_2, h_2 = img_w / 2., img_h / 2.
     bs = b * cam_bbox[:, 0] + 1e-9
@@ -264,9 +264,9 @@ class Renderer:
                 np.radians(rot_angle), rot_axis)
         mesh.apply_transform(rot)
 
-        rot = trimesh.transformations.rotation_matrix(
-            np.radians(180), [1, 0, 0])
-        mesh.apply_transform(rot)
+        # rot = trimesh.transformations.rotation_matrix(
+        #     np.radians(180), [-1, 0, 0])
+        # mesh.apply_transform(rot)
         return mesh
 
     def render_rgba(
