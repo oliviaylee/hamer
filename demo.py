@@ -193,14 +193,14 @@ def main():
                     tmesh.export(os.path.join(args.out_folder, f'{img_fn}_{person_id}.obj'))
                 
                 # Save joints to dict
-                joint_poses = out['pred_keypoints_3d'][n]
-                assert(len(joints == 16))
-                joint_names = ['wrist', 'thumb_1', 'thumb_2', 'thumb_3', 'index_1', 'index_2', 'index_3', 'middle_1', 'middle_2', 'middle_3', 'ring_1', 'ring_2', 'ring_3', 'pinky_1', 'pinky_2', 'pinky_3']
+                joint_poses = out['pred_keypoints_3d'][n].detach().cpu().numpy()
+                assert(joint_poses.shape == (21, 3))
+                joint_names = ['wrist', 'thumb_0', 'thumb_1', 'thumb_2', 'thumb_3', 'index_0', 'index_1', 'index_2', 'index_3', 'middle_0', 'middle_1', 'middle_2', 'middle_3', 'ring_0', 'ring_1', 'ring_2', 'ring_3', 'pinky_0', 'pinky_1', 'pinky_2', 'pinky_3']
                 joints = {}
                 for i, pos in enumerate(joint_poses):
                     joint_pos = pos + camera_translation
-                    joints[joint_names[i]] = joint_pos
-                with open(os.path.join(args.out_folder, f'{img_fn}_{person_id}.json')):
+                    joints[joint_names[i]] = joint_pos.tolist()
+                with open(os.path.join(args.out_folder, f'{img_fn}_{person_id}.json'), "w") as json_file:
                     json.dump(joints, json_file, indent=4)
 
         # Render front view

@@ -15,7 +15,7 @@ token_channel.csv
 /hamer_training_data/
 /outputs/
 /test/
-/third-party/
+/third-party/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
