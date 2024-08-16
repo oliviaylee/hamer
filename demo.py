@@ -30,6 +30,7 @@ def main():
     parser.add_argument('--rescale_factor', type=float, default=2.0, help='Factor for padding the bbox')
     parser.add_argument('--body_detector', type=str, default='vitdet', choices=['vitdet', 'regnety'], help='Using regnety improves runtime and reduces memory')
     parser.add_argument('--file_type', nargs='+', default=['*.jpg', '*.png'], help='List of file extensions to consider')
+    parser.add_argument('--bimanual', dest='bimanual', action='store_true', default=True, help='If set, generates meshes for both hands (vs. just right)')
 
     args = parser.parse_args()
 
@@ -61,7 +62,7 @@ def main():
         detectron2_cfg.model.roi_heads.box_predictor.test_nms_thresh   = 0.4
         detector       = DefaultPredictor_Lazy(detectron2_cfg)
 
-    # keypoint detector
+    # keypoint detectorf
     cpm = ViTPoseModel(device)
 
     # Setup the renderer
@@ -97,16 +98,18 @@ def main():
 
         # Use hands based on hand keypoint detections
         for vitposes in vitposes_out:
-            # left_hand_keyp = vitposes['keypoints'][-42:-21]
+            if args.bimanual:
+                left_hand_keyp = vitposes['keypoints'][-42:-21]
             right_hand_keyp = vitposes['keypoints'][-21:]
 
             # Rejecting not confident detections
-            # keyp = left_hand_keyp
-            # valid = keyp[:,2] > 0.5
-            # if sum(valid) > 3:
-            #     bbox = [keyp[valid,0].min(), keyp[valid,1].min(), keyp[valid,0].max(), keyp[valid,1].max()]
-            #     bboxes.append(bbox)
-            #     is_right.append(0)
+            if args.bimanual:
+                keyp = left_hand_keyp
+                valid = keyp[:,2] > 0.5
+                if sum(valid) > 3:
+                    bbox = [keyp[valid,0].min(), keyp[valid,1].min(), keyp[valid,0].max(), keyp[valid,1].max()]
+                    bboxes.append(bbox)
+                    is_right.append(0)
             keyp = right_hand_keyp
             valid = keyp[:,2] > 0.5
             if sum(valid) > 3:
@@ -186,13 +189,19 @@ def main():
                 # Save all meshes to disk
                 if args.save_mesh:
                     camera_translation = cam_t.copy()
-                    print('pred_cam_t_full', pred_cam_t_full[n])
-                    print('pred_cam_t_out', out['pred_cam_t'][n])
-                    # print(camera_translation)
-                    breakpoint()
                     tmesh = renderer.vertices_to_trimesh(verts, camera_translation, LIGHT_BLUE, is_right=is_right)
-                    print(tmesh.centroid)
                     tmesh.export(os.path.join(args.out_folder, f'{img_fn}_{person_id}.obj'))
+                
+                # Save joints to dict
+                joint_poses = out['pred_keypoints_3d'][n]
+                assert(len(joints == 16))
+                joint_names = ['wrist', 'thumb_1', 'thumb_2', 'thumb_3', 'index_1', 'index_2', 'index_3', 'middle_1', 'middle_2', 'middle_3', 'ring_1', 'ring_2', 'ring_3', 'pinky_1', 'pinky_2', 'pinky_3']
+                joints = {}
+                for i, pos in enumerate(joint_poses):
+                    joint_pos = pos + camera_translation
+                    joints[joint_names[i]] = joint_pos
+                with open(os.path.join(args.out_folder, f'{img_fn}_{person_id}.json')):
+                    json.dump(joints, json_file, indent=4)
 
         # Render front view
         if args.full_frame and len(all_verts) > 0:

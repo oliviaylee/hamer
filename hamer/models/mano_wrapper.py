@@ -37,5 +37,4 @@ class MANO(smplx.MANOLayer):
             extra_joints = vertices2joints(self.joint_regressor_extra, mano_output.vertices)
             joints = torch.cat([joints, extra_joints], dim=1)
         mano_output.joints = joints
-        # print(joints)
         return mano_output
